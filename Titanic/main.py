@@ -4,6 +4,7 @@ from pgmpy.models import DiscreteBayesianNetwork
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.inference import VariableElimination
 from itertools import product
+from prettytable import PrettyTable
 
 # 1. CARREGAR OS DADOS
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -115,19 +116,59 @@ infer = VariableElimination(model)
 # 🔄 Conversão de rótulo para índice (Sex: 'female' → 1)
 sex_mapping = {s: i for i, s in enumerate(sex_states)}
 
-# Fazer inferência com entrada legível
-evidence = {'Sex': sex_mapping['female']}
-result = infer.query(variables=['Survived'], evidence=evidence)
-
-# Função para exibir probabilidades
+# --- Função para exibir resultados individuais (usada apenas para outras evidências) ---
 def exibir_probabilidades(resultado, evidencia_nome=None, evidencia_valor=None):
-    if evidencia_nome is not None and evidencia_valor is not None:
-        print(f"\n\nProbabilidades condicionadas à evidência: {evidencia_nome} = {evidencia_valor}\n")
-
-    print("+=============+=================+")
-    print(f"| Not Survived(0): |     {resultado.values[0]*100:.2f}% |")
+    if evidencia_nome and evidencia_valor:
+        print(f"\nProbabilidades condicionadas à evidência: {evidencia_nome} = {evidencia_valor}\n")
+    
     print("+-------------+-----------------+")
-    print(f"| Survived(1):     |     {resultado.values[1]*100:.2f}% |")
+    print("| Survived    |   phi(Survived) |")
+    print("+=============+=================+")
+    print(f"| Survived(0) |     {resultado.values[0]*100:.2f}%     |")
+    print("+-------------+-----------------+")
+    print(f"| Survived(1) |     {resultado.values[1]*100:.2f}%     |")
     print("+-------------+-----------------+\n")
 
+
+# --- Mostrar primeiro resultado separado para Sex = female ---
+evidence = {'Sex': sex_mapping['female']}
+result = infer.query(variables=['Survived'], evidence=evidence)
 exibir_probabilidades(result, evidencia_nome='Sex', evidencia_valor='female')
+
+
+# --- Mostrar resultado separado para Sex = male ---
+resultado_male = infer.query(variables=['Survived'], evidence={'Sex': sex_mapping['male']})
+exibir_probabilidades(resultado_male, evidencia_nome='Sex', evidencia_valor='male')
+
+
+# --- Tabela agrupada para as classes ---
+pclass_labels = ['1ª Classe', '2ª Classe', '3ª Classe']
+pclass_codigos = [0, 1, 2]
+
+# Criar tabela
+tabela = PrettyTable()
+tabela.field_names = ["Survived"] + pclass_labels
+
+# Obter resultados para cada classe
+resultados_pclass = []
+for cod in pclass_codigos:
+    resultado = infer.query(variables=['Survived'], evidence={'Pclass': cod})
+    resultados_pclass.append(resultado)
+
+# Adicionar linhas à tabela
+tabela.add_row([
+    "Survived(0)",
+    f"{resultados_pclass[0].values[0]*100:.2f}%",
+    f"{resultados_pclass[1].values[0]*100:.2f}%",
+    f"{resultados_pclass[2].values[0]*100:.2f}%"
+])
+tabela.add_row([
+    "Survived(1)",
+    f"{resultados_pclass[0].values[1]*100:.2f}%",
+    f"{resultados_pclass[1].values[1]*100:.2f}%",
+    f"{resultados_pclass[2].values[1]*100:.2f}%"
+])
+
+# Exibir tabela agrupada
+print("\nProbabilidades condicionadas à evidência: Pclass\n")
+print(tabela)
