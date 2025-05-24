@@ -124,9 +124,9 @@ def exibir_probabilidades(resultado, evidencia_nome=None, evidencia_valor=None):
     print("+-------------+-----------------+")
     print("| Survived    |   phi(Survived) |")
     print("+=============+=================+")
-    print(f"| Survived(0) |     {resultado.values[0]*100:.2f}%     |")
+    print(f"| Not Survived(0) |  {resultado.values[0]*100:.2f}%     |")
     print("+-------------+-----------------+")
-    print(f"| Survived(1) |     {resultado.values[1]*100:.2f}%     |")
+    print(f"| Survived(1)     |  {resultado.values[1]*100:.2f}%     |")
     print("+-------------+-----------------+\n")
 
 
@@ -157,7 +157,7 @@ for cod in pclass_codigos:
 
 # Adicionar linhas à tabela
 tabela.add_row([
-    "Survived(0)",
+    "Not Survived(0)",
     f"{resultados_pclass[0].values[0]*100:.2f}%",
     f"{resultados_pclass[1].values[0]*100:.2f}%",
     f"{resultados_pclass[2].values[0]*100:.2f}%"
@@ -172,3 +172,29 @@ tabela.add_row([
 # Exibir tabela agrupada
 print("\nProbabilidades condicionadas à evidência: Pclass\n")
 print(tabela)
+
+# --- Tabela combinada para Sex + Pclass ---
+sex_labels = ['male', 'female']
+pclass_labels = ['1ª Classe', '2ª Classe', '3ª Classe']
+sex_mapping = {'male': 0, 'female': 1}
+pclass_mapping = {'1ª Classe': 0, '2ª Classe': 1, '3ª Classe': 2}
+
+tabela_combinada = PrettyTable()
+tabela_combinada.field_names = ["Sex", "Pclass", "Not Survived (0)", "Survived (1)"]
+
+for sexo in sex_labels:
+    for classe in pclass_labels:
+        evidencia = {
+            'Sex': sex_mapping[sexo],
+            'Pclass': pclass_mapping[classe]
+        }
+        try:
+            resultado = infer.query(variables=['Survived'], evidence=evidencia)
+            prob_0 = f"{resultado.values[0]*100:.2f}%"
+            prob_1 = f"{resultado.values[1]*100:.2f}%"
+        except Exception:
+            prob_0 = prob_1 = "N/A"
+        tabela_combinada.add_row([sexo, classe, prob_0, prob_1])
+
+print("\nProbabilidades condicionadas às evidências combinadas: Sex + Pclass\n")
+print(tabela_combinada)
